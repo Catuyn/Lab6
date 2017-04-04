@@ -82,22 +82,27 @@ direction
 
 		BL interrupt_init
 
-		LDR r0, =0xE0004000
-		MOV r1, #0x2
-		STR r1, [r0,#4]		;reset the clock
-
 		LDR r0, =0xE000401C		;Match Register value
-		LDR r1, =0x00023280		;Clock will reset at this value
+		LDR r1, =0x00800000		;Clock will reset at this value
 		STR r1, [r0]
+		LDR r0, =0xE0004014		; Match Control Register
+		LDR r1, [r0]
+		ORR r1, r1, #0x18		;Change bits 5 and 3 to 1 (Bit 5 stop counter, Bit 3 generates interrupt)
+		STR r1, [r0]
+		LDR r0, =0xE0004000
+		LDR r1, [r0, #4]
+		ORR r1, #2
+		STR r1, [r0,#4]		;reset the clock
+		BIC r1, r1, #2
+		STR r1, [r0, #4]
+
+lab6_loop
+		B lab6_loop
 		LDMFD sp!, {lr}
 		BX lr 
 
 timer_init
-		STMFD SP!, {r0-r1, lr}   ; Save registers
-		LDR r0, =0xE0004014		; Match Control Register
-		LDR r1, [r0]
-		ORR r1, r1, #0x18		;Change bits 5 and 3 to 1 (Bit 4 stop counter, Bit 3 generates interrupt
-		STR r1, [r0]			
+		STMFD SP!, {r0-r1, lr}   ; Save registers			
 		LDR r0, =0xE0004004		;Timer 0 Control Register
 		LDR r1, [r0]
 		ORR r1, r1, #1
@@ -178,13 +183,17 @@ TIMER	LDR r0, =0xE0004000
 		LDR r1, [r0]
 		TST r1, #2
 		BEQ UART0
-		
+		MOV r0, #0x30
+		BL output_character
 			;TIMER code here
 		LDR r0, =0xE0004000
-		MOV r1, #0x10
+		LDR r1, [r0, #4]
+		ORR r1, #2
 		STR r1, [r0,#4]		;reset the clock
-		LDR r1, [r0]
+		BIC r1, r1, #2
+		STR r1, [r0, #4]
 		ORR r1, r1, #2		; Clear Interrupt
+		STR r1, [r0]
 		B FIQ_Exit
 
 UART0	;UART0 code here
@@ -202,17 +211,23 @@ UART0	;UART0 code here
 decrement_speed
 		LDR r0, =0xE000401C		;Match Register value
 		LDR r1, [r0]
-		ADD r1, r1, r1			;double the value
+		MOV r1, r1, LSL #1
 		STR r1, [r0]
-		B FIQ_Exit
+		B clock_reset
 increment_speed		
 		LDR r0, =0xE000401C		;Match Register value
 		LDR r1, [r0]
-		MOV r0, r1
-		MOV r1, #2
-		BL div_and_mod			;Cut the match time in half
-		LDR r1, =0xE000401C		;Match Register value
-		STR r0, [r1]
+		MOV r1, r1, LSR #1
+		STR r1, [r0]
+		B clock_reset
+clock_reset
+		LDR r0, =0xE0004000
+		LDR r1, [r0, #4]
+		ORR r1, #2
+		STR r1, [r0,#4]		;reset the clock
+		BIC r1, r1, #2
+		STR r1, [r0, #4]
+		B FIQ_Exit
 		
 FIQ_Exit
 
@@ -270,7 +285,7 @@ get_symbol
 	ADD r3, r0, r3
 	ADD r3, r0, r3			;Multiply # of rows by 19
 	ADD r3, r2, r3			;Add # of columns
-	ADD r1, r4, r3		;Store the ascii in memory
+	ADD r1, r4, r3			;extract address of ascii in memory
 
 	LDMFD sp!, {r3, r4, lr}
 	BX lr
