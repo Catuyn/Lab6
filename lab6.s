@@ -12,6 +12,7 @@
 	EXTERN div_and_mod
 
 
+	
 game_string = 			 	"|---------------|\r\n",0
 game_string1 = 			  	"|               |\r\n",0
 game_string2 = 			  	"|               |\r\n",0
@@ -65,12 +66,21 @@ compute_place
 		MOV r0, r3, LSL #4
 		ADD r0, r0, r5					;Puts row in upper bits 4-7, column in lower 4
 		MOV r1, r2
-		LDR r4, =0x40004000
+		LDR r4, =0x40004000				;Position of the symbol 
 		STR r0, [r4]					;store location in memory
 		BL insert_symbol
 		BL output_screen
+initial_direction
+		BL rng
+		ADD r0, r0, #1
+		CMP r0, #4						;check if the random should be modified
+		BLE onetofour
+		SUB r0, r0, #4
+onetofour		
+		LDR r4, =0x40004008				;Position of the direction, offset by 8 from symbol 
+		STR r0, [r4]
 		
-
+		
 		LDMFD sp!, {lr}
 		BX lr 
 
@@ -181,13 +191,13 @@ UART0	;UART0 code here
 		CMP r1, #0x2D
 		BEQ decrement_speed
 		
-increment_speed
+decrement_speed
 		LDR r0, =0xE000401C		;Match Register value
 		LDR r1, [r0]
 		ADD r1, r1, r1			;double the value
 		STR r1, [r0]
 		B FIQ_Exit
-decrement_speed		
+increment_speed		
 		LDR r0, =0xE000401C		;Match Register value
 		LDR r1, [r0]
 		MOV r0, r1
@@ -257,7 +267,7 @@ output_screen_loop
 	
 update_screen
 	;code for moving the symbol to a new place on the board
-
+	
 
 								  
 pin_connect_block_setup
