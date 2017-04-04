@@ -172,11 +172,10 @@ TIMER	LDR r0, =0xE0004000
 UART0	;UART0 code here
 		LDR r0, =0xE000C008
 		LDR r1, [r0]
-		AND r1, #0
-		BNE FIQ_Exit
-		LDR r0, =0xE000C000
-		LDR r1, [r0]
-		
+		AND r1, #0		;Check for UART interupt
+		BNE FIQ_Exit	;not the UART then exit
+		BL read_character	;Otherwise read from buffer
+		MOV r1, r0
 	    CMP r1, #0x2B
 		BEQ increment_speed
 		CMP r1, #0x2D
@@ -185,7 +184,7 @@ UART0	;UART0 code here
 increment_speed
 		LDR r0, =0xE000401C		;Match Register value
 		LDR r1, [r0]
-		ADD r1, r1, r1
+		ADD r1, r1, r1			;double the value
 		STR r1, [r0]
 		B FIQ_Exit
 decrement_speed		
@@ -193,7 +192,7 @@ decrement_speed
 		LDR r1, [r0]
 		MOV r0, r1
 		MOV r1, #2
-		BL div_and_mod
+		BL div_and_mod			;Cut the match time in half
 		LDR r1, =0xE000401C		;Match Register value
 		STR r0, [r1]
 		
@@ -255,7 +254,9 @@ output_screen_loop
 
 	LDMFD sp!, {r0, lr}
 	BX lr
-
+	
+update_screen
+	;code for moving the symbol to a new place on the board
 
 
 								  
