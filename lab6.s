@@ -293,7 +293,9 @@ output_screen_loop
 	
 update_screen
 	;code for moving the symbol to a new place on the board
+	STMFD sp!{lr}
 	LDR r4, =0x40004008			;direction,  1 up, 2 right, 3 down, 4 left.
+	LDR r4, [r4]
 	CMP r4, #1
 	BEQ move_up
 	CMP r4, #2
@@ -310,9 +312,22 @@ move_up
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
 	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
-	ADD r0, r0, #0x10			;Move the symbol location up
+	AND r5, r0, #0xF0
+	CMP r5, #0x10
+	BEQ bounce_down
+	SUB r0, r0, #0x10			;Move the symbol location up
 	STR r0, [r4]
 	BL insert_symbol
+	BL output_screen
+	B update_done 
+bounce_down
+	ADD r0, r0, #0x10			;Move the symbol location down
+	STR r0, [r4] 	
+	BL insert_symbol
+	LDR r4, =0x40004008
+	MOV r3, #3
+	STR r3, [r4]
+	B update_done
 move_right
 	MOV r3, #0x20
 	LDR r4, =0x40004000			;location of symbol
@@ -321,9 +336,21 @@ move_right
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
 	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
+	AND r5, r0, #0xF
+	CMP r5, #0xF
+	BEQ	bounce_left
 	ADD r0, r0, #0x1			;Move the symbol location up
 	STR r0, [r4]
 	BL insert_symbol
+	B update_done
+bounce_left
+	SUB r0, r0, #0x1			;Move the symbol location left
+	STR r0, [r4] 	
+	BL insert_symbol
+	LDR r4, =0x40004008
+	MOV r3, #4
+	STR r3, [r4]
+	B update_done	
 move_down
 	MOV r3, #0x20
 	LDR r4, =0x40004000			;location of symbol
@@ -332,9 +359,20 @@ move_down
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
 	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
-	SUB r0, r0, #0x10			;Move the symbol location up
+	AND r5, r0, #0xF0
+	CMP r5, #0xF0
+	BEQ bounce_up
+	SUB r0, r0, #0x10			;Move the symbol location down
 	STR r0, [r4]
 	BL insert_symbol
+bounce_up
+	SUB r0, r0, #0x10			;Move the symbol location down
+	STR r0, [r4] 	
+	BL insert_symbol
+	LDR r4, =0x40004008
+	MOV r3, #1
+	STR r3, [r4]
+	B update_done
 move_left
 	MOV r3, #0x20
 	LDR r4, =0x40004000			;location of symbol
@@ -343,9 +381,24 @@ move_left
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
 	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
+	AND r5, r0, #0xF
+	BEQ bounce_right
+	CMP r5, #0x1
 	SUB r0, r0, #0x1			;Move the symbol location up
 	STR r0, [r4]
 	BL insert_symbol
+	B update_done
+bounce_right
+	ADD r0, r0, #0x1			;Move the symbol location left
+	STR r0, [r4] 	
+	BL insert_symbol
+	LDR r4, =0x40004008
+	MOV r3, #2
+	STR r3, [r4]
+	B update_done
+update_done
+	LDMFD sp!{lr}
+	BX lr
 	
 pin_connect_block_setup
 	STMFD sp!, {r0, r1, r2, lr}
