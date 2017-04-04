@@ -87,8 +87,9 @@ timer_init
 		LDR r0, =0xE0004014		; Match Control Register
 		LDR r1, [r0]
 		ORR r1, r1, #0x28		;Change bits 5 and 3 to 1 (Bit 4 stop counter, Bit 3 generates interrupt
+		STR r1, [r0]
 		LDR r0, =0xE000401C		;Match Register value
-		;MOV r1, #0x008CA000		;Clock will reset at this value
+		MOV r1, =0x008CA000		;Clock will reset at this value
 		STR r1, [r0]			
 		LDR r0, =0xE0004004		;Timer 0 Control Register
 		LDR r1, [r0]
@@ -246,7 +247,25 @@ insert_symbol
 
 	LDMFD sp!, {lr}
 	BX lr
+get_symbol
 
+	STMFD sp!, {r3, r4, lr}			;r0 column and row lower 4 bits is column, upper 4 bits is row, r1 is symbol
+	AND r2, r0, #0xF		;extract column # into r2
+
+	MOV r0, r0, LSR #4		;extract row # into r0
+	AND r0, r0, #0xF
+	LDR r4, =game_string
+	MOV r3, r0, LSL #4		;offset for memory is equal to 19*#rows + # of columns
+	ADD r3, r0, r3
+	ADD r3, r0, r3
+	ADD r3, r0, r3
+	ADD r3, r0, r3			;Multiply # of rows by 19
+	ADD r3, r2, r3			;Add # of columns
+	ADD r1, r4, r3		;Store the ascii in memory
+
+	LDMFD sp!, {r3, r4, lr}
+	BX lr
+	
 output_screen
 	STMFD sp!, {r0, lr}
 	MOV r0, #0xC
@@ -265,9 +284,60 @@ output_screen_loop
 	
 update_screen
 	;code for moving the symbol to a new place on the board
+	LDR r4, #0x40004008			;direction,  1 up, 2 right, 3 down, 4 left.
+	CMP r4, #1
+	BEQ move_up
+	CMP r4, #2
+	BEQ move_right
+	CMP r4, #3
+	BEQ move_down
+	CMP r4, #4
+	BEQ move_ left
+move_up
+	MOV r3, #0x20
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	BL get_symbol
+	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	ADD r0, r0, #0x10			;Move the symbol location up
+	STR r0, [r4]
+	BL insert_symbol
+move_right
+	MOV r3, #0x20
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	BL get_symbol
+	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	ADD r0, r0, #0x1			;Move the symbol location up
+	STR r0, [r4]
+	BL insert_symbol
+move_down
+	MOV r3, #0x20
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	BL get_symbol
+	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	SUB r0, r0, #0x10			;Move the symbol location up
+	STR r0, [r4]
+	BL insert_symbol
+move_left
+	MOV r3, #0x20
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	BL get_symbol
+	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
+	LDR r4, #0x40004000			;location of symbol
+	LDR r0, [r4]
+	SUB r0, r0, #0x1			;Move the symbol location up
+	STR r0, [r4]
+	BL insert_symbol
 	
-
-								  
 pin_connect_block_setup
 	STMFD sp!, {r0, r1, r2, lr}
 	LDR r0, =0xE002C000  		;PINSEL0
