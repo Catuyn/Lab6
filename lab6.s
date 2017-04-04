@@ -170,7 +170,33 @@ TIMER	LDR r0, =0xE0004000
 		B FIQ_Exit
 
 UART0	;UART0 code here
-
+		LDR r0, =0xE000C008
+		LDR r1, [r0]
+		AND r1, #0
+		BNE FIQ_Exit
+		LDR r0, =0xE000C000
+		LDR r1, [r0]
+		
+	    CMP r1, #0x2B
+		BEQ increment_speed
+		CMP r1, #0x2D
+		BEQ decrement_speed
+		
+increment_speed
+		LDR r0, =0xE000401C		;Match Register value
+		LDR r1, [r0]
+		ADD r1, r1, r1
+		STR r1, [r0]
+		B FIQ_Exit
+decrement_speed		
+		LDR r0, =0xE000401C		;Match Register value
+		LDR r1, [r0]
+		MOV r0, r1
+		MOV r1, #2
+		BL div_and_mod
+		LDR r1, =0xE000401C		;Match Register value
+		STR r0, [r1]
+		
 FIQ_Exit
 
 		LDMFD SP!, {r0-r12, lr}
