@@ -74,13 +74,11 @@ initial_direction
 		BL rng
 		ADD r0, r0, #1
 		CMP r0, #4						;check if the random should be modified
-		BLE onetofour
+		BLE direction
 		SUB r0, r0, #4
-onetofour		
+direction		
 		LDR r4, =0x40004008				;Position of the direction, offset by 8 from symbol 
-		STR r0, [r4]
-		
-		
+		STR r0, [r4]					;save direction into memory, 1 up, 2 right, 3 down, 4 left.
 		LDMFD sp!, {lr}
 		BX lr 
 
