@@ -79,6 +79,16 @@ initial_direction
 direction		
 		LDR r4, =0x40004008				;Position of the direction, offset by 8 from symbol 
 		STR r0, [r4]					;save direction into memory, 1 up, 2 right, 3 down, 4 left.
+
+		BL interrupt_init
+
+		LDR r0, =0xE0004000
+		MOV r1, #0x2
+		STR r1, [r0,#4]		;reset the clock
+
+		LDR r0, =0xE000401C		;Match Register value
+		LDR r1, =0x00023280		;Clock will reset at this value
+		STR r1, [r0]
 		LDMFD sp!, {lr}
 		BX lr 
 
@@ -86,10 +96,7 @@ timer_init
 		STMFD SP!, {r0-r1, lr}   ; Save registers
 		LDR r0, =0xE0004014		; Match Control Register
 		LDR r1, [r0]
-		ORR r1, r1, #0x28		;Change bits 5 and 3 to 1 (Bit 4 stop counter, Bit 3 generates interrupt
-		STR r1, [r0]
-		LDR r0, =0xE000401C		;Match Register value
-		MOV r1, =0x008CA000		;Clock will reset at this value
+		ORR r1, r1, #0x18		;Change bits 5 and 3 to 1 (Bit 4 stop counter, Bit 3 generates interrupt
 		STR r1, [r0]			
 		LDR r0, =0xE0004004		;Timer 0 Control Register
 		LDR r1, [r0]
@@ -174,6 +181,8 @@ TIMER	LDR r0, =0xE0004000
 		
 			;TIMER code here
 		LDR r0, =0xE0004000
+		MOV r1, #0x10
+		STR r1, [r0,#4]		;reset the clock
 		LDR r1, [r0]
 		ORR r1, r1, #2		; Clear Interrupt
 		B FIQ_Exit
@@ -284,7 +293,7 @@ output_screen_loop
 	
 update_screen
 	;code for moving the symbol to a new place on the board
-	LDR r4, #0x40004008			;direction,  1 up, 2 right, 3 down, 4 left.
+	LDR r4, =0x40004008			;direction,  1 up, 2 right, 3 down, 4 left.
 	CMP r4, #1
 	BEQ move_up
 	CMP r4, #2
@@ -292,47 +301,47 @@ update_screen
 	CMP r4, #3
 	BEQ move_down
 	CMP r4, #4
-	BEQ move_ left
+	BEQ move_left
 move_up
 	MOV r3, #0x20
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	BL get_symbol
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	ADD r0, r0, #0x10			;Move the symbol location up
 	STR r0, [r4]
 	BL insert_symbol
 move_right
 	MOV r3, #0x20
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	BL get_symbol
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	ADD r0, r0, #0x1			;Move the symbol location up
 	STR r0, [r4]
 	BL insert_symbol
 move_down
 	MOV r3, #0x20
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	BL get_symbol
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	SUB r0, r0, #0x10			;Move the symbol location up
 	STR r0, [r4]
 	BL insert_symbol
 move_left
 	MOV r3, #0x20
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	BL get_symbol
 	SWP r3, r3, [r1]				;r0 will be the symbols location in the string in memory
-	LDR r4, #0x40004000			;location of symbol
+	LDR r4, =0x40004000			;location of symbol
 	LDR r0, [r4]
 	SUB r0, r0, #0x1			;Move the symbol location up
 	STR r0, [r4]
